@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Task Wally</string>
+    <string name="demo_task">
+This is a sample task I want to add into my device as a wallpaper.
+1. take money from X
+2. Play with your child
+3. Learn options trading
+    </string>
+</resources>
