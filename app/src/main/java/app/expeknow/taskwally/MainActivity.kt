@@ -1,62 +1,48 @@
 package app.expeknow.taskwally
 
+import android.app.Application
 import android.app.Dialog
 import android.app.WallpaperManager
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.DisplayMetrics
 import android.view.WindowManager
-import android.widget.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.google.android.material.snackbar.Snackbar
 import yuku.ambilwarna.AmbilWarnaDialog
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
-    private var onStorageResultLauncher: ActivityResultLauncher<Array<String>> =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()){
-            permissions ->
-            permissions.entries.forEach{
-            val permissionName = it.key
-            val isGranted = it.value
-            if(isGranted){
-                if(permissionName == android.Manifest.permission.WRITE_EXTERNAL_STORAGE){
-                    createImage()
-                }
-            }else {
-                Toast.makeText(this, "Kindly allow storage access to save the wallpaper" +
-                        " in the gallery.", Toast.LENGTH_LONG).show()
-            }
-            }
-        }
     private var bitmap : Bitmap? = null
     private var setWallpaperButton : Button? = null
     private var inputTextView: TextView? = null
     private var mainView: ConstraintLayout? = null
     private var textSizeSeekBar: SeekBar? = null
     private var infoImageView: ImageView? = null
-    val displayMetrics = DisplayMetrics()
-    var width = 0
-    var height = 0
+    private val displayMetrics = DisplayMetrics()
+    private var width = 0
+    private var height = 0
     var backgroundColor = 0
     var textSize = 16
     var textColor = 0
+
+    private lateinit var spWrite : SharedPreferences
+    private lateinit var editor : SharedPreferences.Editor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,12 +53,10 @@ class MainActivity : AppCompatActivity() {
         textSizeSeekBar = findViewById(R.id.textSizeBar)
         infoImageView = findViewById(R.id.imageView)
 
+        spWrite = getSharedPreferences("LastSavedTask", Application.MODE_PRIVATE)
+        editor = spWrite.edit()
+
         setWallpaperButton?.setOnClickListener {
-//            if(shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)){
-//                showRationaleDialog()
-//            }else{
-//                onStorageResultLauncher.launch(arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-//            }
             createImage()
         }
 
@@ -80,10 +64,15 @@ class MainActivity : AppCompatActivity() {
         width = displayMetrics.widthPixels
         height = displayMetrics.heightPixels
 
+        val lastTask = spWrite.getString("lastTask", "Enter your tasks...")
+        inputTextView?.text = lastTask
+
         inputTextView?.setOnLongClickListener {
             colorPicker(true)
             return@setOnLongClickListener true
         }
+
+        inputTextView?.setSelectAllOnFocus(true)
 
         mainView?.setOnLongClickListener {
             colorPicker(false)
@@ -109,10 +98,8 @@ class MainActivity : AppCompatActivity() {
                 inputTextView?.textSize = textSize.toFloat()
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                val nine = 9
             }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val eight = 8
             }
         })
 
@@ -138,7 +125,6 @@ class MainActivity : AppCompatActivity() {
                     //on cancel do nothing
                 }
                 override fun onOk(dialog: AmbilWarnaDialog?, color: Int) {
-
                     if(isTextColor){
                         textColor = color
                         inputTextView?.setTextColor(textColor)
@@ -147,20 +133,9 @@ class MainActivity : AppCompatActivity() {
                         mainView?.setBackgroundColor(backgroundColor)
                         inputTextView?.setBackgroundColor(backgroundColor)
                     }
-
                 }
             })
         colorPickerDialogue.show()
-    }
-
-    private fun showRationaleDialog(){
-        val builder =  AlertDialog.Builder(this)
-        builder.setTitle("App requires storage access")
-        .setMessage("Generated Image can't be saved in gallery because storage access is not allowed")
-            .setPositiveButton("Okay") {dialog, _ ->
-                dialog.dismiss()
-            }
-        builder.create().show()
     }
 
     private fun createImage() {
@@ -173,9 +148,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun writeTextOnImage(canvas: Canvas, paint: Paint){
-        paint.setColor(Color.WHITE)
+        paint.color = Color.WHITE
         val scale = resources.displayMetrics.density
         val text = inputTextView?.text.toString()
+        editor.putString("lastTask", text)
+        editor.commit()
 
         val textPaint = TextPaint()
         textPaint.isAntiAlias = true
@@ -212,8 +189,10 @@ class MainActivity : AppCompatActivity() {
         val wallpaperManager = WallpaperManager.getInstance(applicationContext)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM)
-                Toast.makeText(this, "Task wallpaper set successfully!", Toast.LENGTH_SHORT).show()
+                wallpaperManager.setBitmap(bitmap, null,
+                    true, WallpaperManager.FLAG_SYSTEM)
+                Snackbar.make(this, mainView!!.rootView,
+                    "Wallpaper set successfully", Snackbar.LENGTH_SHORT).show()
             }
         } catch (e: IOException) {
             try {
@@ -221,34 +200,6 @@ class MainActivity : AppCompatActivity() {
             } catch (f: IOException) {
                 f.printStackTrace()
             }
-            e.printStackTrace()
-        }
-    }
-
-
-
-    private fun saveWallpaper(){
-        val filename = "taskWally.png"
-        val file = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-            filename
-        )
-        try {
-            FileOutputStream(file).use { outputStream ->
-                bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                // PNG is lossless, the second parameter is ignored
-                outputStream.flush()
-                outputStream.close()
-                //You can use MediaScannerConnection.scanFile() to notify the media scanner about the new file
-                MediaScannerConnection.scanFile(
-                    applicationContext,
-                    arrayOf(file.toString()),
-                    null,
-                    null
-                )
-            }
-        } catch (e: Exception) {
-            // handle exception
             e.printStackTrace()
         }
     }

@@ -6,4 +6,11 @@ This is a sample task I want to add into my device as a wallpaper.
 2. Play with your child
 3. Learn options trading
     </string>
+    <string name="text_size">Text Size</string>
+    <string name="set_as_wallpaper">Set As Wallpaper</string>
+    <string name="enter_your_tasks">enter your tasks</string>
+    <string name="info_line_3">3. Long press on text or on background to change the color of text or background respectively.</string>
+    <string name="info_line_2">2. Use the slider to change the text size.</string>
+    <string name="info_line_1">1. Type in the task you want to add on wallpaper.</string>
+    <string name="instructions">Instructions</string>
 </resources>
