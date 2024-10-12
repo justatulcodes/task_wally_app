@@ -11,3 +11,5 @@
 - Simple and user-friendly design.
 
 🌟 With Task Wallpaper, you can ensure that you stay on top of your most important tasks without the need for a separate app or reminder. Our app is perfect for busy professionals, students, or anyone who wants to stay organized and focused on their top priorities. 🔥
+
+Play Store Link : https://play.google.com/store/apps/details?id=app.expeknow.taskwally&hl=en
