@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
                 wallpaperManager.setBitmap(bitmap, null,
                     true, WallpaperManager.FLAG_SYSTEM)
                 Snackbar.make(this, mainView!!.rootView,
-                    "Wallpaper set successfully", Snackbar.LENGTH_SHORT).show()
+                    "Wallpaper set successfully.", Snackbar.LENGTH_SHORT).show()
             }
         } catch (e: IOException) {
             try {
