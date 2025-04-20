@@ -22,8 +22,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.github.dhaval2404.colorpicker.ColorPickerDialog
+import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.google.android.material.snackbar.Snackbar
-import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.IOException
 
 
@@ -113,29 +114,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun colorPicker(isTextColor: Boolean){
+
+        var colorSelectorHeading = "Pick Color"
         if(isTextColor){
+            colorSelectorHeading = "Select Text Color"
             Toast.makeText(this, "Select text color", Toast.LENGTH_SHORT).show()
         }else{
+            colorSelectorHeading = "Select Background Color"
             Toast.makeText(this, "Select background color", Toast.LENGTH_SHORT).show()
         }
 
-        val colorPickerDialogue = AmbilWarnaDialog(this, backgroundColor,
-            object : AmbilWarnaDialog.OnAmbilWarnaListener {
-                override fun onCancel(dialog: AmbilWarnaDialog?) {
-                    //on cancel do nothing
+        ColorPickerDialog
+            .Builder(this)
+            .setTitle(colorSelectorHeading)
+            .setColorShape(ColorShape.SQAURE)
+            .setDefaultColor(R.color.white)
+            .setColorListener { color, _ ->
+                if(isTextColor){
+                    textColor = color
+                    inputTextView?.setTextColor(textColor)
+                }else{
+                    backgroundColor = color
+                    mainView?.setBackgroundColor(backgroundColor)
+                    inputTextView?.setBackgroundColor(backgroundColor)
                 }
-                override fun onOk(dialog: AmbilWarnaDialog?, color: Int) {
-                    if(isTextColor){
-                        textColor = color
-                        inputTextView?.setTextColor(textColor)
-                    }else{
-                        backgroundColor = color
-                        mainView?.setBackgroundColor(backgroundColor)
-                        inputTextView?.setBackgroundColor(backgroundColor)
-                    }
-                }
-            })
-        colorPickerDialogue.show()
+            }
+            .show()
+
     }
 
     private fun createImage() {
