@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
+    android:fitsSystemWindows="true"
     android:gravity="center"
     android:orientation="vertical"
     tools:context="app.expeknow.taskwally.MainActivity">
@@ -75,17 +76,18 @@
 
     </LinearLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/button"
-        style="@style/Widget.Material3.Button.ElevatedButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center"
         android:layout_margin="16dp"
+        android:textAllCaps="false"
         android:layout_marginBottom="16dp"
+        app:backgroundTint="@color/white"
         android:background="@drawable/button_set_wallpaper"
         android:text="@string/set_as_wallpaper"
-        android:textColor="@color/set_wallpaper_btn_text"
+        android:textColor="@color/onWhiteBtn"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

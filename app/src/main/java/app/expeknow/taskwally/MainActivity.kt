@@ -20,12 +20,14 @@ import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.github.dhaval2404.colorpicker.ColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.google.android.material.snackbar.Snackbar
 import java.io.IOException
+import androidx.core.graphics.withTranslation
 
 
 class MainActivity : AppCompatActivity() {
@@ -47,6 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         setWallpaperButton = findViewById(R.id.button)
         inputTextView = findViewById(R.id.text)
@@ -181,10 +184,9 @@ class MainActivity : AppCompatActivity() {
         val yPos = (canvas.height - staticLayout.height) / 2f - padding
 
         // draw the StaticLayout on the canvas
-        canvas.save()
-        canvas.translate(xPos, yPos)
-        staticLayout.draw(canvas)
-        canvas.restore()
+        canvas.withTranslation(xPos, yPos) {
+            staticLayout.draw(this)
+        }
 
         setWallpaper()
 
