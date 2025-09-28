@@ -28,6 +28,7 @@ import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.google.android.material.snackbar.Snackbar
 import java.io.IOException
 import androidx.core.graphics.withTranslation
+import androidx.core.graphics.createBitmap
 
 
 class MainActivity : AppCompatActivity() {
@@ -147,7 +148,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createImage() {
-        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap!!)
         val paint = Paint()
         paint.color = backgroundColor
