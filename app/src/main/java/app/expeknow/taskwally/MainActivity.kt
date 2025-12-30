@@ -3,6 +3,7 @@ package app.expeknow.taskwally
 import android.app.Application
 import android.app.Dialog
 import android.app.WallpaperManager
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -29,6 +30,9 @@ import com.google.android.material.snackbar.Snackbar
 import java.io.IOException
 import androidx.core.graphics.withTranslation
 import androidx.core.graphics.createBitmap
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 
 class MainActivity : AppCompatActivity() {
@@ -196,19 +200,43 @@ class MainActivity : AppCompatActivity() {
     private fun setWallpaper(){
         val wallpaperManager = WallpaperManager.getInstance(applicationContext)
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                wallpaperManager.setBitmap(bitmap, null,
-                    true, WallpaperManager.FLAG_SYSTEM)
+            // Save bitmap to cache file
+            val cachePath = File(cacheDir, "images")
+            cachePath.mkdirs()
+            val file = File(cachePath, "task_wallpaper.png")
+            val fileOutputStream = FileOutputStream(file)
+            bitmap?.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+            fileOutputStream.close()
+
+            // Get URI for the file using FileProvider
+            val imageUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.fileprovider",
+                file
+            )
+
+            // Create intent to set wallpaper using system UI
+            val intent = Intent(WallpaperManager.ACTION_CROP_AND_SET_WALLPAPER)
+            intent.setDataAndType(imageUri, "image/*")
+            intent.putExtra("mimeType", "image/*")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            // Start the wallpaper chooser activity
+            startActivity(Intent.createChooser(intent, "Set as wallpaper"))
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+            // Fallback to direct method if the above fails
+            try {
+                wallpaperManager.setBitmap(bitmap, null, true,
+                    WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK)
                 Snackbar.make(this, mainView!!.rootView,
                     "Wallpaper set successfully.", Snackbar.LENGTH_SHORT).show()
-            }
-        } catch (e: IOException) {
-            try {
-                wallpaperManager.setBitmap(bitmap)
             } catch (f: IOException) {
                 f.printStackTrace()
+                Snackbar.make(this, mainView!!.rootView,
+                    "Failed to set wallpaper: ${f.message}", Snackbar.LENGTH_LONG).show()
             }
-            e.printStackTrace()
         }
     }
 }
