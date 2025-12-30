@@ -3,6 +3,7 @@ package app.expeknow.taskwally
 import android.app.Application
 import android.app.Dialog
 import android.app.WallpaperManager
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -20,11 +21,19 @@ import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.github.dhaval2404.colorpicker.ColorPickerDialog
+import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.google.android.material.snackbar.Snackbar
-import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.IOException
+import androidx.core.graphics.withTranslation
+import androidx.core.graphics.createBitmap
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
+import androidx.core.graphics.toColorInt
 
 
 class MainActivity : AppCompatActivity() {
@@ -46,6 +55,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         setWallpaperButton = findViewById(R.id.button)
         inputTextView = findViewById(R.id.text)
@@ -113,36 +123,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun colorPicker(isTextColor: Boolean){
+
+        var colorSelectorHeading = "Pick Color"
         if(isTextColor){
+            colorSelectorHeading = "Select Text Color"
             Toast.makeText(this, "Select text color", Toast.LENGTH_SHORT).show()
         }else{
+            colorSelectorHeading = "Select Background Color"
             Toast.makeText(this, "Select background color", Toast.LENGTH_SHORT).show()
         }
 
-        val colorPickerDialogue = AmbilWarnaDialog(this, backgroundColor,
-            object : AmbilWarnaDialog.OnAmbilWarnaListener {
-                override fun onCancel(dialog: AmbilWarnaDialog?) {
-                    //on cancel do nothing
+        ColorPickerDialog
+            .Builder(this)
+            .setTitle(colorSelectorHeading)
+            .setColorShape(ColorShape.SQAURE)
+            .setDefaultColor(R.color.black)
+            .setColorListener { color, _ ->
+                if(isTextColor){
+                    textColor = color
+                    inputTextView?.setTextColor(textColor)
+                }else{
+                    backgroundColor = color
+                    mainView?.setBackgroundColor(backgroundColor)
+                    inputTextView?.setBackgroundColor(backgroundColor)
                 }
-                override fun onOk(dialog: AmbilWarnaDialog?, color: Int) {
-                    if(isTextColor){
-                        textColor = color
-                        inputTextView?.setTextColor(textColor)
-                    }else{
-                        backgroundColor = color
-                        mainView?.setBackgroundColor(backgroundColor)
-                        inputTextView?.setBackgroundColor(backgroundColor)
-                    }
-                }
-            })
-        colorPickerDialogue.show()
+            }
+            .show()
+
     }
 
     private fun createImage() {
-        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap!!)
         val paint = Paint()
-        paint.color = backgroundColor
+        paint.color = if(backgroundColor != 0) backgroundColor else "#000000".toColorInt()
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         writeTextOnImage(canvas, paint)
     }
@@ -176,10 +190,9 @@ class MainActivity : AppCompatActivity() {
         val yPos = (canvas.height - staticLayout.height) / 2f - padding
 
         // draw the StaticLayout on the canvas
-        canvas.save()
-        canvas.translate(xPos, yPos)
-        staticLayout.draw(canvas)
-        canvas.restore()
+        canvas.withTranslation(xPos, yPos) {
+            staticLayout.draw(this)
+        }
 
         setWallpaper()
 
@@ -188,19 +201,43 @@ class MainActivity : AppCompatActivity() {
     private fun setWallpaper(){
         val wallpaperManager = WallpaperManager.getInstance(applicationContext)
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                wallpaperManager.setBitmap(bitmap, null,
-                    true, WallpaperManager.FLAG_SYSTEM)
-                Snackbar.make(this, mainView!!.rootView,
-                    "Wallpaper set successfully", Snackbar.LENGTH_SHORT).show()
-            }
+            // Save bitmap to cache file
+            val cachePath = File(cacheDir, "images")
+            cachePath.mkdirs()
+            val file = File(cachePath, "task_wallpaper.png")
+            val fileOutputStream = FileOutputStream(file)
+            bitmap?.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+            fileOutputStream.close()
+
+            // Get URI for the file using FileProvider
+            val imageUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.fileprovider",
+                file
+            )
+
+            // Create intent to set wallpaper using system UI
+            val intent = Intent(WallpaperManager.ACTION_CROP_AND_SET_WALLPAPER)
+            intent.setDataAndType(imageUri, "image/*")
+            intent.putExtra("mimeType", "image/*")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            // Start the wallpaper chooser activity
+            startActivity(Intent.createChooser(intent, "Set as wallpaper"))
+
         } catch (e: IOException) {
+            e.printStackTrace()
+            // Fallback to direct method if the above fails
             try {
-                wallpaperManager.setBitmap(bitmap)
+                wallpaperManager.setBitmap(bitmap, null, true,
+                    WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK)
+                Snackbar.make(this, mainView!!.rootView,
+                    "Wallpaper set successfully.", Snackbar.LENGTH_SHORT).show()
             } catch (f: IOException) {
                 f.printStackTrace()
+                Snackbar.make(this, mainView!!.rootView,
+                    "Failed to set wallpaper: ${f.message}", Snackbar.LENGTH_LONG).show()
             }
-            e.printStackTrace()
         }
     }
 }
