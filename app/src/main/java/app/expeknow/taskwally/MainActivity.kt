@@ -33,6 +33,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import androidx.core.graphics.toColorInt
 
 
 class MainActivity : AppCompatActivity() {
@@ -136,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             .Builder(this)
             .setTitle(colorSelectorHeading)
             .setColorShape(ColorShape.SQAURE)
-            .setDefaultColor(R.color.white)
+            .setDefaultColor(R.color.black)
             .setColorListener { color, _ ->
                 if(isTextColor){
                     textColor = color
@@ -155,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap!!)
         val paint = Paint()
-        paint.color = backgroundColor
+        paint.color = if(backgroundColor != 0) backgroundColor else "#000000".toColorInt()
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         writeTextOnImage(canvas, paint)
     }
